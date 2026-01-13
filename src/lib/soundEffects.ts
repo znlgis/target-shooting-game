@@ -98,6 +98,45 @@ class SoundEffects {
     oscillator.start(ctx.currentTime)
     oscillator.stop(ctx.currentTime + 0.3)
   }
+
+  playExplosion() {
+    const ctx = this.getContext()
+    const oscillator = ctx.createOscillator()
+    const gainNode = ctx.createGain()
+
+    oscillator.connect(gainNode)
+    gainNode.connect(ctx.destination)
+
+    oscillator.frequency.setValueAtTime(200, ctx.currentTime)
+    oscillator.frequency.exponentialRampToValueAtTime(50, ctx.currentTime + 0.4)
+    oscillator.type = 'sawtooth'
+
+    gainNode.gain.setValueAtTime(0.35, ctx.currentTime)
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4)
+
+    oscillator.start(ctx.currentTime)
+    oscillator.stop(ctx.currentTime + 0.4)
+  }
+
+  playBombReward() {
+    const ctx = this.getContext()
+    const oscillator = ctx.createOscillator()
+    const gainNode = ctx.createGain()
+
+    oscillator.connect(gainNode)
+    gainNode.connect(ctx.destination)
+
+    oscillator.frequency.setValueAtTime(400, ctx.currentTime)
+    oscillator.frequency.setValueAtTime(600, ctx.currentTime + 0.05)
+    oscillator.frequency.setValueAtTime(800, ctx.currentTime + 0.1)
+    oscillator.frequency.setValueAtTime(1000, ctx.currentTime + 0.15)
+
+    gainNode.gain.setValueAtTime(0.3, ctx.currentTime)
+    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25)
+
+    oscillator.start(ctx.currentTime)
+    oscillator.stop(ctx.currentTime + 0.25)
+  }
 }
 
 export const soundEffects = new SoundEffects()

@@ -31,3 +31,7 @@ export const COMBO_TIMEOUT = 2000
 
 export const BONUS_TARGET_CHANCE = 0.15
 export const SPEED_TARGET_CHANCE = 0.10
+
+export const CONSECUTIVE_HITS_FOR_BOMB = 3
+export const BOMB_EXPLOSION_RADIUS = 150
+export const BOMB_POINTS = 50

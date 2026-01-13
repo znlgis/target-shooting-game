@@ -10,6 +10,8 @@ import { TimerDisplay } from '@/components/TimerDisplay'
 import { GameOverDialog } from '@/components/GameOverDialog'
 import { ComboDisplay } from '@/components/ComboDisplay'
 import { LeaderboardDialog } from '@/components/LeaderboardDialog'
+import { BombDisplay } from '@/components/BombDisplay'
+import { ExplosionEffect } from '@/components/ExplosionEffect'
 import { useKV } from '@github/spark/hooks'
 import { 
   Play, 
@@ -25,7 +27,8 @@ import {
   Target as TargetType,
   TargetType as TType, 
   GameStats,
-  LeaderboardEntry 
+  LeaderboardEntry,
+  Explosion
 } from '@/types/game'
 import { 
   DIFFICULTY_CONFIGS, 
@@ -36,7 +39,10 @@ import {
   COMBO_MULTIPLIER,
   COMBO_TIMEOUT,
   BONUS_TARGET_CHANCE,
-  SPEED_TARGET_CHANCE
+  SPEED_TARGET_CHANCE,
+  CONSECUTIVE_HITS_FOR_BOMB,
+  BOMB_EXPLOSION_RADIUS,
+  BOMB_POINTS
 } from '@/lib/gameConfig'
 import { soundEffects } from '@/lib/soundEffects'
 import { toast } from 'sonner'
@@ -54,9 +60,12 @@ function App() {
     accuracy: 0,
     combo: 0,
     maxCombo: 0,
+    consecutiveHits: 0,
+    bombs: 0,
   })
   const [timeLeft, setTimeLeft] = useState(60)
   const [hitEffects, setHitEffects] = useState<Array<{ id: string; x: number; y: number }>>([])
+  const [explosions, setExplosions] = useState<Explosion[]>([])
   const [showLeaderboard, setShowLeaderboard] = useState(false)
   const [showCombo, setShowCombo] = useState(false)
   
@@ -136,7 +145,22 @@ function App() {
   }, [gameState])
 
   const handleTargetHit = useCallback((target: TargetType, x: number, y: number) => {
-    setTargets((prev) => prev.filter((t) => t.id !== target.id))
+    if (target.type === 'speed' && gameAreaRef.current) {
+      const rect = gameAreaRef.current.getBoundingClientRect()
+      const margin = target.size
+      const newX = margin + Math.random() * (rect.width - margin * 2)
+      const newY = margin + Math.random() * (rect.height - margin * 2)
+      
+      setTargets((prev) => 
+        prev.map((t) => 
+          t.id === target.id 
+            ? { ...t, x: newX, y: newY } 
+            : t
+        )
+      )
+    } else {
+      setTargets((prev) => prev.filter((t) => t.id !== target.id))
+    }
     
     if (comboTimeoutRef.current) {
       clearTimeout(comboTimeoutRef.current)
@@ -146,6 +170,7 @@ function App() {
       const newCombo = prev.combo + 1
       const newMaxCombo = Math.max(newCombo, prev.maxCombo)
       const newHits = prev.hits + 1
+      const newConsecutiveHits = prev.consecutiveHits + 1
       const totalShots = newHits + prev.misses
       const accuracy = totalShots > 0 ? Math.round((newHits / totalShots) * 100) : 0
       
@@ -159,6 +184,16 @@ function App() {
       const comboBonus = newCombo > 1 ? Math.floor(points * (COMBO_MULTIPLIER - 1) * (newCombo - 1)) : 0
       const totalPoints = points + comboBonus
       const newScore = prev.score + totalPoints
+
+      let newBombs = prev.bombs
+      if (newConsecutiveHits >= CONSECUTIVE_HITS_FOR_BOMB && newConsecutiveHits % CONSECUTIVE_HITS_FOR_BOMB === 0) {
+        newBombs += 1
+        soundEffects.playBombReward()
+        toast.success(`💣 Bomb Earned! ${newConsecutiveHits} hits in a row!`, {
+          duration: 2000,
+          position: 'top-center',
+        })
+      }
       
       return {
         score: newScore,
@@ -167,6 +202,8 @@ function App() {
         accuracy,
         combo: newCombo,
         maxCombo: newMaxCombo,
+        consecutiveHits: newConsecutiveHits,
+        bombs: newBombs,
       }
     })
 
@@ -183,7 +220,7 @@ function App() {
       })
     } else if (target.type === 'speed') {
       soundEffects.playBonus()
-      toast.success(`⚡ Speed Target! +${SPEED_TARGET_POINTS} points!`, {
+      toast.success(`⚡ Speed Target! Position changed! +${SPEED_TARGET_POINTS} points!`, {
         duration: 1500,
         position: 'top-center',
       })
@@ -203,7 +240,7 @@ function App() {
       }
       return prev
     })
-  }, [])
+  }, [gameAreaRef])
 
   const handleMiss = useCallback(() => {
     if (gameState !== 'playing') return
@@ -225,6 +262,8 @@ function App() {
         accuracy,
         combo: 0,
         maxCombo: prev.maxCombo,
+        consecutiveHits: 0,
+        bombs: prev.bombs,
       }
     })
 
@@ -235,9 +274,19 @@ function App() {
   const startGame = useCallback(() => {
     setGameState('playing')
     setTargets([])
-    setStats({ score: 0, hits: 0, misses: 0, accuracy: 0, combo: 0, maxCombo: 0 })
+    setStats({ 
+      score: 0, 
+      hits: 0, 
+      misses: 0, 
+      accuracy: 0, 
+      combo: 0, 
+      maxCombo: 0,
+      consecutiveHits: 0,
+      bombs: 0,
+    })
     setTimeLeft(config.gameDuration)
     setHitEffects([])
+    setExplosions([])
     setShowCombo(false)
     if (comboTimeoutRef.current) {
       clearTimeout(comboTimeoutRef.current)
@@ -287,6 +336,61 @@ function App() {
   const restartGame = useCallback(() => {
     startGame()
   }, [startGame])
+
+  const useBomb = useCallback(() => {
+    if (gameState !== 'playing' || stats.bombs === 0 || !gameAreaRef.current) return
+
+    const rect = gameAreaRef.current.getBoundingClientRect()
+    const centerX = rect.width / 2
+    const centerY = rect.height / 2
+
+    const explosion: Explosion = {
+      id: `explosion-${Date.now()}`,
+      x: centerX,
+      y: centerY,
+      radius: BOMB_EXPLOSION_RADIUS,
+    }
+
+    setExplosions((prev) => [...prev, explosion])
+    setTimeout(() => {
+      setExplosions((prev) => prev.filter((e) => e.id !== explosion.id))
+    }, 600)
+
+    let hitCount = 0
+    const targetsToRemove: string[] = []
+
+    targets.forEach((target) => {
+      const distance = Math.sqrt(
+        Math.pow(target.x - centerX, 2) + Math.pow(target.y - centerY, 2)
+      )
+      if (distance <= BOMB_EXPLOSION_RADIUS) {
+        targetsToRemove.push(target.id)
+        hitCount++
+      }
+    })
+
+    setTargets((prev) => prev.filter((t) => !targetsToRemove.includes(t.id)))
+
+    setStats((prev) => ({
+      ...prev,
+      bombs: prev.bombs - 1,
+      score: prev.score + (hitCount * BOMB_POINTS),
+    }))
+
+    soundEffects.playExplosion()
+    
+    if (hitCount > 0) {
+      toast.success(`💥 Explosion! ${hitCount} targets destroyed! +${hitCount * BOMB_POINTS} points!`, {
+        duration: 2000,
+        position: 'top-center',
+      })
+    } else {
+      toast.info('💣 Bomb used, but no targets hit!', {
+        duration: 1500,
+        position: 'top-center',
+      })
+    }
+  }, [gameState, stats.bombs, targets])
 
   useEffect(() => {
     if (gameState === 'playing') {
@@ -372,6 +476,11 @@ function App() {
             </Card>
 
             <TimerDisplay timeLeft={timeLeft} totalTime={config.gameDuration} />
+            <BombDisplay 
+              bombCount={stats.bombs} 
+              onUseBomb={useBomb}
+              disabled={gameState !== 'playing'}
+            />
             <StatsDisplay stats={stats} />
 
             <div className="flex flex-col gap-2">
@@ -489,6 +598,16 @@ function App() {
 
               {hitEffects.map((effect) => (
                 <HitEffect key={effect.id} id={effect.id} x={effect.x} y={effect.y} />
+              ))}
+
+              {explosions.map((explosion) => (
+                <ExplosionEffect 
+                  key={explosion.id}
+                  id={explosion.id}
+                  x={explosion.x}
+                  y={explosion.y}
+                  radius={explosion.radius}
+                />
               ))}
 
               <ComboDisplay combo={stats.combo} show={showCombo && gameState === 'playing'} />

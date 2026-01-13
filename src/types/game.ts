@@ -21,6 +21,15 @@ export interface GameStats {
   accuracy: number
   combo: number
   maxCombo: number
+  consecutiveHits: number
+  bombs: number
+}
+
+export interface Explosion {
+  id: string
+  x: number
+  y: number
+  radius: number
 }
 
 export interface DifficultyConfig {
