@@ -13,11 +13,11 @@ This is a single-view game with multiple interactive features including target s
 ## Essential Features
 
 ### Target Shooting Mechanics
-- **Functionality**: Targets appear randomly on screen and move; includes normal targets (orange), bonus targets (green with star), and speed targets (purple with lightning)
+- **Functionality**: Targets appear randomly on screen and move; includes normal targets (orange), bonus targets (green with star), and speed targets (purple with lightning). All targets change position when hit before disappearing.
 - **Purpose**: Core gameplay loop that tests player accuracy and reaction time with variety
 - **Trigger**: Targets spawn automatically at intervals based on difficulty level
-- **Progression**: Target appears → Moves across screen → Player clicks to hit → Target disappears with visual feedback → Score updates with appropriate points
-- **Success criteria**: Click detection works accurately, hit/miss is clearly communicated, targets spawn consistently, different target types behave correctly
+- **Progression**: Target appears → Moves across screen → Player clicks to hit → Target relocates briefly → Target disappears with visual feedback → Score updates with appropriate points
+- **Success criteria**: Click detection works accurately, hit/miss is clearly communicated, targets spawn consistently, different target types behave correctly, all targets relocate on hit
 
 ### Combo System
 - **Functionality**: Consecutive hits without missing build a combo multiplier that increases score per hit
@@ -26,12 +26,19 @@ This is a single-view game with multiple interactive features including target s
 - **Progression**: Hit target → Combo increases → Multiplier applies to score → Miss or timeout resets combo → Max combo tracked
 - **Success criteria**: Combo counter updates correctly, multiplier applies accurately, resets on miss, displays prominently during gameplay
 
+### Bomb System
+- **Functionality**: Players earn bombs by hitting 3 targets in a row and can use them via right-click to create an explosion at the cursor position that destroys all targets within radius
+- **Purpose**: Provides strategic power-up for clearing multiple targets and rewards consistent accuracy
+- **Trigger**: Earned after 3 consecutive hits; activated by right-clicking on the game area
+- **Progression**: Earn bomb → Right-click at desired location → Explosion appears at cursor → All targets within radius destroyed → Points awarded per target destroyed
+- **Success criteria**: Bombs earned correctly, right-click triggers explosion at cursor position, explosion radius works accurately, appropriate points awarded, visual feedback clear
+
 ### Power-Up Targets
-- **Functionality**: Special targets that award bonus points - Bonus targets (300pts, green with star) and Speed targets (200pts, faster purple targets)
+- **Functionality**: Special targets that award bonus points - Bonus targets (300pts, green with star) and Speed targets (200pts, faster purple targets). All targets now relocate when hit before disappearing.
 - **Purpose**: Add variety and higher-value opportunities for skilled players
 - **Trigger**: Random spawn chance for each target (15% bonus, 10% speed)
-- **Progression**: Special target spawns → Player identifies by color → Hit for bonus points → Special feedback shown
-- **Success criteria**: Special targets spawn at correct rates, award correct points, visually distinct, provide unique feedback
+- **Progression**: Special target spawns → Player identifies by color → Hit for bonus points → Target relocates briefly → Special feedback shown → Target disappears
+- **Success criteria**: Special targets spawn at correct rates, award correct points, visually distinct, provide unique feedback, relocate on hit
 
 ### Sound Effects
 - **Functionality**: Synthesized audio feedback using Web Audio API for hits, misses, bonuses, combos, and game over
@@ -83,6 +90,9 @@ This is a single-view game with multiple interactive features including target s
 - **Timer completion during target hit**: Properly registers final shots before game over
 - **Combo timeout**: Combo resets after 2 seconds of inactivity to maintain challenge
 - **Audio context**: Lazy initialization of Web Audio API to comply with browser autoplay policies
+- **Right-click outside game area**: Doesn't trigger bomb usage, only works within game boundaries
+- **Multiple simultaneous bombs**: Prevented by checking bomb count before allowing usage
+- **Target relocation boundary**: All targets relocate within valid game area boundaries when hit
 
 ## Design Direction
 The design should evoke a sense of focused intensity with a modern shooting range aesthetic - clean, precise, and action-oriented with bold contrasts, sharp visual feedback, and engaging animations for combos and special targets.
@@ -142,9 +152,10 @@ Animations emphasize the shooting action with snappy, responsive feedback for hi
   - Custom target component (circular SVG with crosshair design, color-coded by type)
   - Custom combo display (floating animated element with fire icon and multiplier)
   - Custom leaderboard dialog (sortable list with medals for top 3)
-  - Custom game canvas area (full-screen playable zone with grid pattern background)
+  - Custom game canvas area (full-screen playable zone with grid pattern background, supports right-click for bomb usage)
   - Animated hit effect component (expanding circles/particles on successful hit)
   - Custom timer display (large prominent numbers with warning states)
+  - Custom bomb display (shows bomb count and right-click usage instructions)
 
 - **States**: 
   - Buttons: Default, hover (lifted), active (pressed down), disabled (muted)

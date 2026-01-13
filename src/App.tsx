@@ -145,7 +145,7 @@ function App() {
   }, [gameState])
 
   const handleTargetHit = useCallback((target: TargetType, x: number, y: number) => {
-    if (target.type === 'speed' && gameAreaRef.current) {
+    if (gameAreaRef.current) {
       const rect = gameAreaRef.current.getBoundingClientRect()
       const margin = target.size
       const newX = margin + Math.random() * (rect.width - margin * 2)
@@ -158,8 +158,10 @@ function App() {
             : t
         )
       )
-    } else {
-      setTargets((prev) => prev.filter((t) => t.id !== target.id))
+
+      setTimeout(() => {
+        setTargets((prev) => prev.filter((t) => t.id !== target.id))
+      }, 100)
     }
     
     if (comboTimeoutRef.current) {
@@ -337,12 +339,12 @@ function App() {
     startGame()
   }, [startGame])
 
-  const useBomb = useCallback(() => {
+  const useBomb = useCallback((mouseX: number, mouseY: number) => {
     if (gameState !== 'playing' || stats.bombs === 0 || !gameAreaRef.current) return
 
     const rect = gameAreaRef.current.getBoundingClientRect()
-    const explosionX = Math.random() * rect.width
-    const explosionY = Math.random() * rect.height
+    const explosionX = mouseX - rect.left
+    const explosionY = mouseY - rect.top
 
     const explosion: Explosion = {
       id: `explosion-${Date.now()}`,
@@ -478,7 +480,6 @@ function App() {
             <TimerDisplay timeLeft={timeLeft} totalTime={config.gameDuration} />
             <BombDisplay 
               bombCount={stats.bombs} 
-              onUseBomb={useBomb}
               disabled={gameState !== 'playing'}
             />
             <StatsDisplay stats={stats} />
@@ -545,6 +546,12 @@ function App() {
               ref={gameAreaRef}
               className="relative w-full h-[600px] bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg border-2 border-border overflow-hidden cursor-crosshair"
               onClick={handleMiss}
+              onContextMenu={(e) => {
+                e.preventDefault()
+                if (gameState === 'playing' && stats.bombs > 0) {
+                  useBomb(e.clientX, e.clientY)
+                }
+              }}
               style={{
                 backgroundImage: `
                   repeating-linear-gradient(0deg, transparent, transparent 49px, oklch(0.30 0.04 255 / 0.3) 49px, oklch(0.30 0.04 255 / 0.3) 50px),
