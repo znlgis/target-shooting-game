@@ -2,48 +2,48 @@ export type Difficulty = 'easy' | 'medium' | 'hard'
 
 export type GameState = 'idle' | 'playing' | 'paused' | 'gameover'
 
-export type TargetType = 'normal' | 'bonus' | 'speed'
-
-export interface Target {
-  id: string
   x: number
-  y: number
-  vx: number
-  vy: number
+
   size: number
-  type: TargetType
 }
-
-export interface GameStats {
-  score: number
-  hits: number
-  misses: number
-  accuracy: number
-  combo: number
-  maxCombo: number
-  consecutiveHits: number
-  bombs: number
-}
-
-export interface LeaderboardEntry {
-  score: number
-  accuracy: number
-  hits: number
-  difficulty: Difficulty
-  date: string
-  maxCombo: number
-}
-
-export interface DifficultyConfig {
-  targetSize: number
-  targetSpeed: number
-  spawnInterval: number
-  gameDuration: number
-}
-
-export interface Explosion {
-  id: string
   x: number
+  hits: num
+  accuracy: 
+  maxCombo: 
+  size: number
+
+}
+
+  date: string
+}
+export interfa
+  targetSpeed: n
+  gameDuration: nu
+
+  id: string
   y: number
-  radius: number
+}
+
+
+
+
+
+
+
+  date: string
+
+}
+
+
+
+
+
+
+
+
+
+  id: string
+
+  y: number
+
 }
