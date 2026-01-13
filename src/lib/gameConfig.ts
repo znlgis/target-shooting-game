@@ -23,3 +23,11 @@ export const DIFFICULTY_CONFIGS: Record<Difficulty, DifficultyConfig> = {
 
 export const POINTS_PER_HIT = 100
 export const POINTS_PER_MISS = -10
+export const BONUS_TARGET_POINTS = 300
+export const SPEED_TARGET_POINTS = 200
+
+export const COMBO_MULTIPLIER = 1.2
+export const COMBO_TIMEOUT = 2000
+
+export const BONUS_TARGET_CHANCE = 0.15
+export const SPEED_TARGET_CHANCE = 0.10

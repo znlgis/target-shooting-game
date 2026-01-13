@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { GameStats } from '@/types/game'
-import { Trophy, Target, XCircle, ArrowClockwise } from '@phosphor-icons/react'
+import { Trophy, Target, XCircle, ArrowClockwise, Fire } from '@phosphor-icons/react'
 import { Separator } from '@/components/ui/separator'
 
 interface GameOverDialogProps {
@@ -36,27 +36,34 @@ export function GameOverDialog({ open, stats, onRestart }: GameOverDialogProps) 
           
           <Separator />
           
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="text-center space-y-2">
               <div className="flex items-center justify-center">
                 <Target size={24} className="text-secondary" weight="fill" />
               </div>
               <p className="text-xs text-muted-foreground">Hits</p>
               <p className="font-mono text-2xl font-bold">{stats.hits}</p>
             </div>
-            <div className="space-y-2">
+            <div className="text-center space-y-2">
               <div className="flex items-center justify-center">
                 <XCircle size={24} className="text-destructive" weight="fill" />
               </div>
               <p className="text-xs text-muted-foreground">Misses</p>
               <p className="font-mono text-2xl font-bold">{stats.misses}</p>
             </div>
-            <div className="space-y-2">
+            <div className="text-center space-y-2">
               <div className="flex items-center justify-center">
                 <Trophy size={24} className="text-accent" weight="fill" />
               </div>
               <p className="text-xs text-muted-foreground">Accuracy</p>
               <p className="font-mono text-2xl font-bold">{stats.accuracy}%</p>
+            </div>
+            <div className="text-center space-y-2">
+              <div className="flex items-center justify-center">
+                <Fire size={24} className="text-accent" weight="fill" />
+              </div>
+              <p className="text-xs text-muted-foreground">Best Combo</p>
+              <p className="font-mono text-2xl font-bold">{stats.maxCombo}x</p>
             </div>
           </div>
 

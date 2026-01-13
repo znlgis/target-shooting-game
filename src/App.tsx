@@ -8,30 +8,43 @@ import { HitEffect } from '@/components/HitEffect'
 import { StatsDisplay } from '@/components/StatsDisplay'
 import { TimerDisplay } from '@/components/TimerDisplay'
 import { GameOverDialog } from '@/components/GameOverDialog'
+import { ComboDisplay } from '@/components/ComboDisplay'
+import { LeaderboardDialog } from '@/components/LeaderboardDialog'
 import { useKV } from '@github/spark/hooks'
 import { 
   Play, 
   Pause, 
   ArrowClockwise, 
   Crosshair,
-  Lightning
+  Lightning,
+  ListNumbers
 } from '@phosphor-icons/react'
 import { 
   Difficulty, 
   GameState, 
-  Target as TargetType, 
-  GameStats 
+  Target as TargetType,
+  TargetType as TType, 
+  GameStats,
+  LeaderboardEntry 
 } from '@/types/game'
 import { 
   DIFFICULTY_CONFIGS, 
   POINTS_PER_HIT, 
-  POINTS_PER_MISS 
+  POINTS_PER_MISS,
+  BONUS_TARGET_POINTS,
+  SPEED_TARGET_POINTS,
+  COMBO_MULTIPLIER,
+  COMBO_TIMEOUT,
+  BONUS_TARGET_CHANCE,
+  SPEED_TARGET_CHANCE
 } from '@/lib/gameConfig'
+import { soundEffects } from '@/lib/soundEffects'
 import { toast } from 'sonner'
 
 function App() {
-  const [difficulty, setDifficulty, deleteDifficulty] = useKV<Difficulty>('difficulty', 'medium')
-  const [highScore, setHighScore, deleteHighScore] = useKV<number>('highScore', 0)
+  const [difficulty, setDifficulty] = useKV<Difficulty>('difficulty', 'medium')
+  const [highScore, setHighScore] = useKV<number>('highScore', 0)
+  const [leaderboard, setLeaderboard] = useKV<LeaderboardEntry[]>('leaderboard', [])
   const [gameState, setGameState] = useState<GameState>('idle')
   const [targets, setTargets] = useState<TargetType[]>([])
   const [stats, setStats] = useState<GameStats>({
@@ -39,27 +52,43 @@ function App() {
     hits: 0,
     misses: 0,
     accuracy: 0,
+    combo: 0,
+    maxCombo: 0,
   })
   const [timeLeft, setTimeLeft] = useState(60)
   const [hitEffects, setHitEffects] = useState<Array<{ id: string; x: number; y: number }>>([])
+  const [showLeaderboard, setShowLeaderboard] = useState(false)
+  const [showCombo, setShowCombo] = useState(false)
   
   const gameAreaRef = useRef<HTMLDivElement>(null)
   const spawnIntervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined)
   const timerIntervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined)
   const animationFrameRef = useRef<number | undefined>(undefined)
+  const comboTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   const config = DIFFICULTY_CONFIGS[difficulty || 'medium']
+
+  const getTargetType = (): TType => {
+    const rand = Math.random()
+    if (rand < BONUS_TARGET_CHANCE) return 'bonus'
+    if (rand < BONUS_TARGET_CHANCE + SPEED_TARGET_CHANCE) return 'speed'
+    return 'normal'
+  }
 
   const spawnTarget = useCallback(() => {
     if (!gameAreaRef.current || gameState !== 'playing') return
 
     const rect = gameAreaRef.current.getBoundingClientRect()
-    const margin = config.targetSize
+    const targetType = getTargetType()
+    const sizeMultiplier = targetType === 'speed' ? 0.7 : 1
+    const targetSize = config.targetSize * sizeMultiplier
+    const margin = targetSize
     const x = margin + Math.random() * (rect.width - margin * 2)
     const y = margin + Math.random() * (rect.height - margin * 2)
     
     const angle = Math.random() * Math.PI * 2
-    const speed = config.targetSpeed
+    const speedMultiplier = targetType === 'speed' ? 2 : 1
+    const speed = config.targetSpeed * speedMultiplier
     const vx = Math.cos(angle) * speed
     const vy = Math.sin(angle) * speed
 
@@ -69,7 +98,8 @@ function App() {
       y,
       vx,
       vy,
-      size: config.targetSize,
+      size: targetSize,
+      type: targetType,
     }
 
     setTargets((prev) => [...prev, newTarget])
@@ -105,20 +135,38 @@ function App() {
     animationFrameRef.current = requestAnimationFrame(updateTargets)
   }, [gameState])
 
-  const handleTargetHit = useCallback((targetId: string, x: number, y: number) => {
-    setTargets((prev) => prev.filter((t) => t.id !== targetId))
+  const handleTargetHit = useCallback((target: TargetType, x: number, y: number) => {
+    setTargets((prev) => prev.filter((t) => t.id !== target.id))
     
+    if (comboTimeoutRef.current) {
+      clearTimeout(comboTimeoutRef.current)
+    }
+
     setStats((prev) => {
+      const newCombo = prev.combo + 1
+      const newMaxCombo = Math.max(newCombo, prev.maxCombo)
       const newHits = prev.hits + 1
       const totalShots = newHits + prev.misses
       const accuracy = totalShots > 0 ? Math.round((newHits / totalShots) * 100) : 0
-      const newScore = prev.score + POINTS_PER_HIT
+      
+      let points = POINTS_PER_HIT
+      if (target.type === 'bonus') {
+        points = BONUS_TARGET_POINTS
+      } else if (target.type === 'speed') {
+        points = SPEED_TARGET_POINTS
+      }
+
+      const comboBonus = newCombo > 1 ? Math.floor(points * (COMBO_MULTIPLIER - 1) * (newCombo - 1)) : 0
+      const totalPoints = points + comboBonus
+      const newScore = prev.score + totalPoints
       
       return {
         score: newScore,
         hits: newHits,
         misses: prev.misses,
         accuracy,
+        combo: newCombo,
+        maxCombo: newMaxCombo,
       }
     })
 
@@ -127,14 +175,42 @@ function App() {
       setHitEffects((prev) => prev.slice(1))
     }, 400)
 
-    toast.success(`+${POINTS_PER_HIT} points!`, {
-      duration: 1000,
-      position: 'top-center',
+    if (target.type === 'bonus') {
+      soundEffects.playBonus()
+      toast.success(`🌟 Bonus! +${BONUS_TARGET_POINTS} points!`, {
+        duration: 1500,
+        position: 'top-center',
+      })
+    } else if (target.type === 'speed') {
+      soundEffects.playBonus()
+      toast.success(`⚡ Speed Target! +${SPEED_TARGET_POINTS} points!`, {
+        duration: 1500,
+        position: 'top-center',
+      })
+    } else {
+      soundEffects.playHit()
+    }
+
+    setShowCombo(true)
+    comboTimeoutRef.current = setTimeout(() => {
+      setStats((prev) => ({ ...prev, combo: 0 }))
+      setShowCombo(false)
+    }, COMBO_TIMEOUT)
+
+    setStats((prev) => {
+      if (prev.combo > 1) {
+        soundEffects.playCombo()
+      }
+      return prev
     })
   }, [])
 
   const handleMiss = useCallback(() => {
     if (gameState !== 'playing') return
+
+    if (comboTimeoutRef.current) {
+      clearTimeout(comboTimeoutRef.current)
+    }
 
     setStats((prev) => {
       const newMisses = prev.misses + 1
@@ -147,16 +223,25 @@ function App() {
         hits: prev.hits,
         misses: newMisses,
         accuracy,
+        combo: 0,
+        maxCombo: prev.maxCombo,
       }
     })
+
+    soundEffects.playMiss()
+    setShowCombo(false)
   }, [gameState])
 
   const startGame = useCallback(() => {
     setGameState('playing')
     setTargets([])
-    setStats({ score: 0, hits: 0, misses: 0, accuracy: 0 })
+    setStats({ score: 0, hits: 0, misses: 0, accuracy: 0, combo: 0, maxCombo: 0 })
     setTimeLeft(config.gameDuration)
     setHitEffects([])
+    setShowCombo(false)
+    if (comboTimeoutRef.current) {
+      clearTimeout(comboTimeoutRef.current)
+    }
     toast.success('Game started! Good luck!', { duration: 2000 })
   }, [config])
 
@@ -172,11 +257,32 @@ function App() {
 
   const endGame = useCallback(() => {
     setGameState('gameover')
+    soundEffects.playGameOver()
+    
     if (stats.score > (highScore || 0)) {
       setHighScore(stats.score)
       toast.success('🎉 New High Score!', { duration: 3000 })
     }
-  }, [stats.score, highScore, setHighScore])
+
+    const newEntry: LeaderboardEntry = {
+      score: stats.score,
+      accuracy: stats.accuracy,
+      hits: stats.hits,
+      difficulty: difficulty || 'medium',
+      date: new Date().toISOString(),
+      maxCombo: stats.maxCombo,
+    }
+
+    setLeaderboard((prevLeaderboard) => {
+      const updated = [...(prevLeaderboard || []), newEntry]
+      return updated.sort((a, b) => b.score - a.score).slice(0, 50)
+    })
+
+    if (comboTimeoutRef.current) {
+      clearTimeout(comboTimeoutRef.current)
+    }
+    setShowCombo(false)
+  }, [stats, highScore, setHighScore, difficulty, setLeaderboard])
 
   const restartGame = useCallback(() => {
     startGame()
@@ -222,12 +328,22 @@ function App() {
             <p className="text-muted-foreground">Test your aim and reaction time</p>
           </div>
           
-          <Card className="p-3 bg-primary/20 border-secondary">
-            <div className="text-center space-y-1">
-              <p className="text-xs text-muted-foreground">High Score</p>
-              <p className="font-mono text-2xl font-bold text-accent">{highScore}</p>
-            </div>
-          </Card>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setShowLeaderboard(true)}
+              className="flex items-center gap-2"
+            >
+              <ListNumbers size={20} weight="bold" />
+              Leaderboard
+            </Button>
+            <Card className="p-3 bg-primary/20 border-secondary">
+              <div className="text-center space-y-1">
+                <p className="text-xs text-muted-foreground">High Score</p>
+                <p className="font-mono text-2xl font-bold text-accent">{highScore}</p>
+              </div>
+            </Card>
+          </div>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
@@ -362,9 +478,10 @@ function App() {
                     x={target.x}
                     y={target.y}
                     size={target.size}
+                    type={target.type}
                     onClick={(e) => {
                       e.stopPropagation()
-                      handleTargetHit(target.id, target.x, target.y)
+                      handleTargetHit(target, target.x, target.y)
                     }}
                   />
                 ))}
@@ -373,6 +490,8 @@ function App() {
               {hitEffects.map((effect) => (
                 <HitEffect key={effect.id} id={effect.id} x={effect.x} y={effect.y} />
               ))}
+
+              <ComboDisplay combo={stats.combo} show={showCombo && gameState === 'playing'} />
             </motion.div>
           </div>
         </div>
@@ -382,6 +501,12 @@ function App() {
         open={gameState === 'gameover'}
         stats={stats}
         onRestart={restartGame}
+      />
+
+      <LeaderboardDialog
+        open={showLeaderboard}
+        onClose={() => setShowLeaderboard(false)}
+        entries={leaderboard || []}
       />
     </div>
   )

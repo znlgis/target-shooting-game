@@ -2,7 +2,7 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { GameStats } from '@/types/game'
-import { Trophy, Target, XCircle } from '@phosphor-icons/react'
+import { Trophy, Target, XCircle, Fire } from '@phosphor-icons/react'
 
 interface StatsDisplayProps {
   stats: GameStats
@@ -19,7 +19,7 @@ export function StatsDisplay({ stats }: StatsDisplayProps) {
           </span>
         </div>
         <Separator />
-        <div className="grid grid-cols-3 gap-3 text-center">
+        <div className="grid grid-cols-2 gap-3 text-center">
           <div>
             <div className="flex items-center justify-center gap-1 mb-1">
               <Target size={16} className="text-secondary" />
@@ -45,6 +45,15 @@ export function StatsDisplay({ stats }: StatsDisplayProps) {
             </div>
             <span className="font-mono text-lg font-bold text-foreground">
               {stats.accuracy}%
+            </span>
+          </div>
+          <div>
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <Fire size={16} className="text-accent" weight="fill" />
+              <span className="text-xs text-muted-foreground">Best Combo</span>
+            </div>
+            <span className="font-mono text-lg font-bold text-foreground">
+              {stats.maxCombo}x
             </span>
           </div>
         </div>
