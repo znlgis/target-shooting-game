@@ -29,7 +29,7 @@ export function ComboDisplay({ combo, show }: ComboDisplayProps) {
         >
           <Fire size={28} weight="fill" className="text-accent-foreground" />
           <div className="font-mono text-2xl font-bold text-accent-foreground">
-            {combo}x COMBO!
+            {combo}连击！
           </div>
         </motion.div>
       </motion.div>

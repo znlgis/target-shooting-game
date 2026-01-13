@@ -18,16 +18,16 @@ export function GameOverDialog({ open, stats, onRestart }: GameOverDialogProps) 
         <DialogHeader>
           <DialogTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
             <Trophy size={32} className="text-accent" weight="fill" />
-            Game Over!
+            游戏结束！
           </DialogTitle>
           <DialogDescription className="text-center text-base">
-            Here are your final stats
+            这是你的最终成绩
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <Card className="p-6 bg-primary/20 border-secondary">
             <div className="text-center space-y-2">
-              <p className="text-sm text-muted-foreground">Final Score</p>
+              <p className="text-sm text-muted-foreground">最终得分</p>
               <p className="font-mono text-5xl font-bold text-secondary">
                 {stats.score}
               </p>
@@ -41,28 +41,28 @@ export function GameOverDialog({ open, stats, onRestart }: GameOverDialogProps) 
               <div className="flex items-center justify-center">
                 <Target size={24} className="text-secondary" weight="fill" />
               </div>
-              <p className="text-xs text-muted-foreground">Hits</p>
+              <p className="text-xs text-muted-foreground">命中</p>
               <p className="font-mono text-2xl font-bold">{stats.hits}</p>
             </div>
             <div className="text-center space-y-2">
               <div className="flex items-center justify-center">
                 <XCircle size={24} className="text-destructive" weight="fill" />
               </div>
-              <p className="text-xs text-muted-foreground">Misses</p>
+              <p className="text-xs text-muted-foreground">未中</p>
               <p className="font-mono text-2xl font-bold">{stats.misses}</p>
             </div>
             <div className="text-center space-y-2">
               <div className="flex items-center justify-center">
                 <Trophy size={24} className="text-accent" weight="fill" />
               </div>
-              <p className="text-xs text-muted-foreground">Accuracy</p>
+              <p className="text-xs text-muted-foreground">准度</p>
               <p className="font-mono text-2xl font-bold">{stats.accuracy}%</p>
             </div>
             <div className="text-center space-y-2">
               <div className="flex items-center justify-center">
                 <Fire size={24} className="text-accent" weight="fill" />
               </div>
-              <p className="text-xs text-muted-foreground">Best Combo</p>
+              <p className="text-xs text-muted-foreground">最佳连击</p>
               <p className="font-mono text-2xl font-bold">{stats.maxCombo}x</p>
             </div>
           </div>
@@ -73,7 +73,7 @@ export function GameOverDialog({ open, stats, onRestart }: GameOverDialogProps) 
             size="lg"
           >
             <ArrowClockwise size={20} weight="bold" />
-            Play Again
+            再来一局
           </Button>
         </div>
       </DialogContent>

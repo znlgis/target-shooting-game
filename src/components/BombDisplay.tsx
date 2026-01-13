@@ -12,7 +12,7 @@ export function BombDisplay({ bombCount, disabled }: BombDisplayProps) {
       <div className="space-y-3">
         <div className="flex items-center gap-2 text-sm font-semibold">
           <Bomb size={18} className="text-destructive" weight="fill" />
-          <span>Bombs</span>
+          <span>炸弹</span>
         </div>
         <div className="flex items-center gap-2">
           {Array.from({ length: Math.min(bombCount, 5) }).map((_, i) => (
@@ -24,15 +24,15 @@ export function BombDisplay({ bombCount, disabled }: BombDisplayProps) {
             </span>
           )}
           {bombCount === 0 && (
-            <span className="text-sm text-muted-foreground">No bombs</span>
+            <span className="text-sm text-muted-foreground">没有炸弹</span>
           )}
         </div>
         <div className="space-y-1">
           <p className="text-xs text-muted-foreground">
-            Hit 3 targets in a row to earn a bomb
+            连续命中3个靶可获得1个炸弹
           </p>
           <p className="text-xs text-secondary font-semibold">
-            Right-click to use bomb at cursor position
+            右键点击在鼠标位置使用炸弹
           </p>
         </div>
       </div>

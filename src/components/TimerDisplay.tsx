@@ -16,7 +16,7 @@ export function TimerDisplay({ timeLeft, totalTime }: TimerDisplayProps) {
     <Card className="p-4 bg-card/80 backdrop-blur-sm border-border">
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Time Left</span>
+          <span className="text-sm text-muted-foreground">剩余时间</span>
           <span
             className={cn(
               'font-mono text-3xl font-bold transition-colors',
@@ -25,7 +25,7 @@ export function TimerDisplay({ timeLeft, totalTime }: TimerDisplayProps) {
               !isWarning && !isCritical && 'text-secondary'
             )}
           >
-            {timeLeft}s
+            {timeLeft}秒
           </span>
         </div>
         <Progress

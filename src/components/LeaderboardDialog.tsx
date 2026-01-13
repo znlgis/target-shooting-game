@@ -30,20 +30,29 @@ export function LeaderboardDialog({ open, onClose, entries }: LeaderboardDialogP
     }
   }
 
+  const getDifficultyText = (difficulty: string) => {
+    switch (difficulty) {
+      case 'easy': return '简单'
+      case 'medium': return '中等'
+      case 'hard': return '困难'
+      default: return difficulty
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
             <Trophy size={32} className="text-accent" weight="fill" />
-            Leaderboard
+            排行榜
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-3 py-4">
           {sortedEntries.length === 0 ? (
             <Card className="p-8 text-center">
               <Target size={48} className="text-muted-foreground mx-auto mb-3" />
-              <p className="text-muted-foreground">No games played yet. Start playing to see your scores!</p>
+              <p className="text-muted-foreground">还没有游戏记录。开始游戏来查看你的成绩吧！</p>
             </Card>
           ) : (
             sortedEntries.map((entry, index) => (
@@ -74,7 +83,7 @@ export function LeaderboardDialog({ open, onClose, entries }: LeaderboardDialogP
                     
                     <div className="col-span-1 text-center">
                       <Badge variant="outline" className={getDifficultyColor(entry.difficulty)}>
-                        {entry.difficulty}
+                        {getDifficultyText(entry.difficulty)}
                       </Badge>
                     </div>
                     
@@ -83,7 +92,7 @@ export function LeaderboardDialog({ open, onClose, entries }: LeaderboardDialogP
                         {entry.accuracy}%
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(entry.date).toLocaleDateString()}
+                        {new Date(entry.date).toLocaleDateString('zh-CN')}
                       </p>
                     </div>
                   </div>
