@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { LeaderboardEntry } from '@/types/game'
 import { Trophy, Medal, Target, Fire } from '@phosphor-icons/react'
 import { Separator } from '@/components/ui/separator'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface LeaderboardDialogProps {
   open: boolean
@@ -12,6 +13,7 @@ interface LeaderboardDialogProps {
 }
 
 export function LeaderboardDialog({ open, onClose, entries }: LeaderboardDialogProps) {
+  const { t, language } = useLanguage()
   const sortedEntries = [...entries].sort((a, b) => b.score - a.score).slice(0, 10)
 
   const getMedalIcon = (index: number) => {
@@ -32,9 +34,9 @@ export function LeaderboardDialog({ open, onClose, entries }: LeaderboardDialogP
 
   const getDifficultyText = (difficulty: string) => {
     switch (difficulty) {
-      case 'easy': return '简单'
-      case 'medium': return '中等'
-      case 'hard': return '困难'
+      case 'easy': return t.easy
+      case 'medium': return t.medium
+      case 'hard': return t.hard
       default: return difficulty
     }
   }
@@ -45,14 +47,14 @@ export function LeaderboardDialog({ open, onClose, entries }: LeaderboardDialogP
         <DialogHeader>
           <DialogTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2">
             <Trophy size={32} className="text-accent" weight="fill" />
-            排行榜
+            {t.leaderboard}
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-3 py-4">
           {sortedEntries.length === 0 ? (
             <Card className="p-8 text-center">
               <Target size={48} className="text-muted-foreground mx-auto mb-3" />
-              <p className="text-muted-foreground">还没有游戏记录。开始游戏来查看你的成绩吧！</p>
+              <p className="text-muted-foreground">{t.noRecordsYet}</p>
             </Card>
           ) : (
             sortedEntries.map((entry, index) => (
@@ -92,7 +94,7 @@ export function LeaderboardDialog({ open, onClose, entries }: LeaderboardDialogP
                         {entry.accuracy}%
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(entry.date).toLocaleDateString('zh-CN')}
+                        {new Date(entry.date).toLocaleDateString(language === 'zh' ? 'zh-CN' : 'en-US')}
                       </p>
                     </div>
                   </div>

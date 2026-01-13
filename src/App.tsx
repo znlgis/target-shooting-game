@@ -12,6 +12,7 @@ import { ComboDisplay } from '@/components/ComboDisplay'
 import { LeaderboardDialog } from '@/components/LeaderboardDialog'
 import { BombDisplay } from '@/components/BombDisplay'
 import { ExplosionEffect } from '@/components/ExplosionEffect'
+import { LanguageProvider, useLanguage } from '@/contexts/LanguageContext'
 import { useKV } from '@github/spark/hooks'
 import { 
   Play, 
@@ -19,7 +20,8 @@ import {
   ArrowClockwise, 
   Crosshair,
   Lightning,
-  ListNumbers
+  ListNumbers,
+  Translate
 } from '@phosphor-icons/react'
 import { 
   Difficulty, 
@@ -47,7 +49,8 @@ import {
 import { soundEffects } from '@/lib/soundEffects'
 import { toast } from 'sonner'
 
-function App() {
+function GameContent() {
+  const { t, language, setLanguage } = useLanguage()
   const [difficulty, setDifficulty] = useKV<Difficulty>('difficulty', 'medium')
   const [highScore, setHighScore] = useKV<number>('highScore', 0)
   const [leaderboard, setLeaderboard] = useKV<LeaderboardEntry[]>('leaderboard', [])
@@ -191,7 +194,7 @@ function App() {
       if (newConsecutiveHits >= CONSECUTIVE_HITS_FOR_BOMB && newConsecutiveHits % CONSECUTIVE_HITS_FOR_BOMB === 0) {
         newBombs += 1
         soundEffects.playBombReward()
-        toast.success(`💣 获得炸弹！连续命中${newConsecutiveHits}次！`, {
+        toast.success(t.bombsEarned(newConsecutiveHits), {
           duration: 2000,
           position: 'top-center',
         })
@@ -216,13 +219,13 @@ function App() {
 
     if (target.type === 'bonus') {
       soundEffects.playBonus()
-      toast.success(`🌟 奖励！+${BONUS_TARGET_POINTS}分！`, {
+      toast.success(t.bonusTarget(BONUS_TARGET_POINTS), {
         duration: 1500,
         position: 'top-center',
       })
     } else if (target.type === 'speed') {
       soundEffects.playBonus()
-      toast.success(`⚡ 速度靶！位置改变！+${SPEED_TARGET_POINTS}分！`, {
+      toast.success(t.speedTarget(SPEED_TARGET_POINTS), {
         duration: 1500,
         position: 'top-center',
       })
@@ -293,18 +296,18 @@ function App() {
     if (comboTimeoutRef.current) {
       clearTimeout(comboTimeoutRef.current)
     }
-    toast.success('游戏开始！祝你好运！', { duration: 2000 })
-  }, [config])
+    toast.success(t.gameStarted, { duration: 2000 })
+  }, [config, t])
 
   const pauseGame = useCallback(() => {
     setGameState('paused')
-    toast.info('游戏已暂停', { duration: 1000 })
-  }, [])
+    toast.info(t.gamePaused.replace(/[⏸️ ]/g, ''), { duration: 1000 })
+  }, [t])
 
   const resumeGame = useCallback(() => {
     setGameState('playing')
-    toast.success('游戏继续', { duration: 1000 })
-  }, [])
+    toast.success(t.resume, { duration: 1000 })
+  }, [t])
 
   const endGame = useCallback(() => {
     setGameState('gameover')
@@ -312,7 +315,7 @@ function App() {
     
     if (stats.score > (highScore || 0)) {
       setHighScore(stats.score)
-      toast.success('🎉 新纪录！', { duration: 3000 })
+      toast.success(t.newHighScore, { duration: 3000 })
     }
 
     const newEntry: LeaderboardEntry = {
@@ -333,7 +336,7 @@ function App() {
       clearTimeout(comboTimeoutRef.current)
     }
     setShowCombo(false)
-  }, [stats, highScore, setHighScore, difficulty, setLeaderboard])
+  }, [stats, highScore, setHighScore, difficulty, setLeaderboard, t])
 
   const restartGame = useCallback(() => {
     startGame()
@@ -382,17 +385,17 @@ function App() {
     soundEffects.playExplosion()
     
     if (hitCount > 0) {
-      toast.success(`💥 爆炸！摧毁了${hitCount}个靶！+${hitCount * BOMB_POINTS}分！`, {
+      toast.success(t.bombsDestroyed(hitCount, hitCount * BOMB_POINTS), {
         duration: 2000,
         position: 'top-center',
       })
     } else {
-      toast.info('💣 炸弹已使用，但没有击中靶！', {
+      toast.info(t.bombUsedNoHit, {
         duration: 1500,
         position: 'top-center',
       })
     }
-  }, [gameState, stats.bombs, targets])
+  }, [gameState, stats.bombs, targets, t])
 
   useEffect(() => {
     if (gameState === 'playing') {
@@ -429,23 +432,32 @@ function App() {
           <div className="space-y-1">
             <h1 className="text-4xl font-bold tracking-tight flex items-center gap-3">
               <Crosshair size={40} className="text-accent" weight="bold" />
-              打靶射击
+              {t.title}
             </h1>
-            <p className="text-muted-foreground">测试你的瞄准和反应能力</p>
+            <p className="text-muted-foreground">{t.subtitle}</p>
           </div>
           
           <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setLanguage(language === 'zh' ? 'en' : 'zh')}
+              className="flex items-center gap-2"
+              title={t.language}
+            >
+              <Translate size={20} weight="bold" />
+              {language === 'zh' ? 'EN' : '中文'}
+            </Button>
             <Button
               variant="outline"
               onClick={() => setShowLeaderboard(true)}
               className="flex items-center gap-2"
             >
               <ListNumbers size={20} weight="bold" />
-              排行榜
+              {t.leaderboard}
             </Button>
             <Card className="p-3 bg-primary/20 border-secondary">
               <div className="text-center space-y-1">
-                <p className="text-xs text-muted-foreground">最高分</p>
+                <p className="text-xs text-muted-foreground">{t.highScore}</p>
                 <p className="font-mono text-2xl font-bold text-accent">{highScore}</p>
               </div>
             </Card>
@@ -458,7 +470,7 @@ function App() {
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-sm font-semibold">
                   <Lightning size={18} className="text-accent" weight="fill" />
-                  难度
+                  {t.difficulty}
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   {(['easy', 'medium', 'hard'] as Difficulty[]).map((level) => (
@@ -470,7 +482,7 @@ function App() {
                       disabled={gameState === 'playing'}
                       className={difficulty === level ? 'bg-secondary text-secondary-foreground' : ''}
                     >
-                      {level === 'easy' ? '简单' : level === 'medium' ? '中等' : '困难'}
+                      {level === 'easy' ? t.easy : level === 'medium' ? t.medium : t.hard}
                     </Button>
                   ))}
                 </div>
@@ -492,7 +504,7 @@ function App() {
                   size="lg"
                 >
                   <Play size={20} weight="fill" />
-                  开始游戏
+                  {t.startGame}
                 </Button>
               )}
               
@@ -504,7 +516,7 @@ function App() {
                   size="lg"
                 >
                   <Pause size={20} weight="fill" />
-                  暂停
+                  {t.pause}
                 </Button>
               )}
               
@@ -516,7 +528,7 @@ function App() {
                     size="lg"
                   >
                     <Play size={20} weight="fill" />
-                    继续
+                    {t.resume}
                   </Button>
                   <Button 
                     onClick={restartGame}
@@ -524,7 +536,7 @@ function App() {
                     className="w-full font-semibold"
                   >
                     <ArrowClockwise size={20} weight="bold" />
-                    重新开始
+                    {t.restart}
                   </Button>
                 </>
               )}
@@ -535,8 +547,8 @@ function App() {
                 variant="outline" 
                 className="w-full justify-center py-2 text-sm"
               >
-                {gameState === 'playing' && '🎯 游戏进行中'}
-                {gameState === 'paused' && '⏸️ 已暂停'}
+                {gameState === 'playing' && t.gameInProgress}
+                {gameState === 'paused' && t.gamePaused}
               </Badge>
             )}
           </div>
@@ -564,11 +576,11 @@ function App() {
                   <div className="text-center space-y-4 p-8 bg-card/80 backdrop-blur-sm rounded-lg border-2 border-border">
                     <Crosshair size={64} className="text-accent mx-auto" weight="bold" />
                     <div>
-                      <h2 className="text-2xl font-bold mb-2">准备好开始了吗？</h2>
+                      <h2 className="text-2xl font-bold mb-2">{t.readyToStart}</h2>
                       <p className="text-muted-foreground">
-                        点击移动的靶子进行射击。
+                        {t.clickTargets}
                         <br />
-                        点击"开始游戏"开始！
+                        {t.clickStartToBegin}
                       </p>
                     </div>
                   </div>
@@ -580,8 +592,8 @@ function App() {
                   <div className="text-center space-y-4 p-8 bg-card border-2 border-border rounded-lg">
                     <Pause size={64} className="text-secondary mx-auto" weight="fill" />
                     <div>
-                      <h2 className="text-2xl font-bold mb-2">游戏已暂停</h2>
-                      <p className="text-muted-foreground">点击"继续"以继续游戏</p>
+                      <h2 className="text-2xl font-bold mb-2">{t.gamePaused.replace(/[⏸️ ]/g, '')}</h2>
+                      <p className="text-muted-foreground">{language === 'zh' ? '点击"继续"以继续游戏' : 'Click "Resume" to continue'}</p>
                     </div>
                   </div>
                 </div>
@@ -635,6 +647,14 @@ function App() {
         entries={leaderboard || []}
       />
     </div>
+  )
+}
+
+function App() {
+  return (
+    <LanguageProvider>
+      <GameContent />
+    </LanguageProvider>
   )
 }
 

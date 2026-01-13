@@ -12,6 +12,13 @@ This is a single-view game with multiple interactive features including target s
 
 ## Essential Features
 
+### Language Switching
+- **Functionality**: Toggle between Chinese (zh) and English (en) for all interface text
+- **Purpose**: Provides accessibility for both Chinese and English speakers
+- **Trigger**: Click language toggle button in header
+- **Progression**: User clicks language button → Language switches → All UI text updates → Preference saved to persistent storage
+- **Success criteria**: Language preference persists between sessions, all text updates immediately, translations are accurate and contextual
+
 ### Target Shooting Mechanics
 - **Functionality**: Targets appear randomly on screen and move; includes normal targets (orange), bonus targets (green with star), and speed targets (purple with lightning). All targets change position when hit before disappearing.
 - **Purpose**: Core gameplay loop that tests player accuracy and reaction time with variety
