@@ -341,13 +341,13 @@ function App() {
     if (gameState !== 'playing' || stats.bombs === 0 || !gameAreaRef.current) return
 
     const rect = gameAreaRef.current.getBoundingClientRect()
-    const centerX = rect.width / 2
-    const centerY = rect.height / 2
+    const explosionX = Math.random() * rect.width
+    const explosionY = Math.random() * rect.height
 
     const explosion: Explosion = {
       id: `explosion-${Date.now()}`,
-      x: centerX,
-      y: centerY,
+      x: explosionX,
+      y: explosionY,
       radius: BOMB_EXPLOSION_RADIUS,
     }
 
@@ -361,7 +361,7 @@ function App() {
 
     targets.forEach((target) => {
       const distance = Math.sqrt(
-        Math.pow(target.x - centerX, 2) + Math.pow(target.y - centerY, 2)
+        Math.pow(target.x - explosionX, 2) + Math.pow(target.y - explosionY, 2)
       )
       if (distance <= BOMB_EXPLOSION_RADIUS) {
         targetsToRemove.push(target.id)
